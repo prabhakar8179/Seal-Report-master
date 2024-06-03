@@ -1,0 +1,500 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <!-- Required meta tags always come first -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <link href="https://sealreport.org/demo/Images/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+    <title>Seal Web Interface Samples</title>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+    <!-- jQuery first, then Bootstrap JS. -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+    <style>
+        body {
+            padding-top: 60px;
+        }
+
+        .table td, .table th {
+            padding: 5px;
+        }
+
+        label {
+            font-weight: normal;
+        }
+    </style>
+    <script>
+        var sealServer = "/demo/";
+        //sealServer = "http://localhost:17178/seal/";
+        var connected = false;
+        var name = "";
+
+        function enableControls() {
+            $("button").prop("disabled", !connected);
+            $("#login_button").prop("disabled", connected);
+            $("#version_button").prop("disabled", false);
+        }
+
+        $(document).ready(function () {
+            $("button").addClass("btn btn-mg btn-default");
+            $("button").attr("type", "button");
+
+            $("#login_button")
+                .click(function () {
+                    $("#login_label").html("Connecting...<br>");
+                    $.post(sealServer + "SWILogin", {
+                        user: $("#user_name").val(),
+                        password: $("#password").val()
+                    })
+                        .done(function (data) {
+                            if (!data.error) {
+                                connected = true;
+                                name = data.name;
+                                $("#login_label").html("SWILogin Done:'" + data.name + "'<br>" + JSON.stringify(data));
+                                $("#logout_label").text("");
+                            }
+                            else {
+                                $("#login_label").text("Error: " + data.error);
+                            }
+                            enableControls();
+                        })
+                });
+
+            $("#open_button")
+                .click(function () {
+                    window.open(sealServer + "Main");
+                });
+
+            $("#folders_button")
+                .click(function () {
+                    $.post(sealServer + "SWIGetRootFolders")
+                        .done(function (data) {
+                            if (!data.error) {
+                                $("#folders_label").html("SWIGetRootFolders Done: " + data.length + " subfolders<br>" + JSON.stringify(data));
+
+                            }
+                            else {
+                                $("#folders_label").text("Error: " + data.error);
+                            }
+                            enableControls();
+                        })
+                });
+
+            $("#folder_detail_button")
+                .click(function () {
+                    $.post(sealServer + "SWIGetFolderDetail", {
+                        path: "\\"
+                    })
+                        .done(function (data) {
+                            if (!data.error) {
+                                $("#folder_detail_label").html("SWIGetFolderDetail for \\Samples Done: " + data.files.length + " files<br>" + JSON.stringify(data));
+                            }
+                            else {
+                                $("#folder_detail_label").text("Error: " + data.error);
+                            }
+                            enableControls();
+                        })
+                });
+
+            $("#report_detail_button")
+                .click(function () {
+                    $.post(sealServer + "SWIGetReportDetail", {
+                        path: "\\Samples\\07-Outputs and schedules.srex"
+                    })
+                        .done(function (data) {
+                            if (!data.error) {
+                                $("#report_detail_label").html("SWIReportDetail Done:" + data.views.length + " view(s) and " + data.outputs.length + " output(s)<br>" + JSON.stringify(data));
+                            }
+                            else {
+                                $("#report_detail_label").text("Error: " + data.error);
+                            }
+                            enableControls();
+                        })
+                });
+
+
+            $("#search_button")
+                .click(function () {
+                    $.post(sealServer + "SWISearch", {
+                        path: "\\Samples",
+                        pattern: "02-"
+                    })
+                        .done(function (data) {
+                            if (!data.error) {
+                                $("#search_label").html("SWISearch Done:" + JSON.stringify(data));
+                            }
+                            else {
+                                $("#search_label").text("Error: " + data.error);
+                            }
+                            enableControls();
+                        })
+                });
+
+
+            $("#execute_button")
+                .click(function () {
+                    $("#execute_label").text("Executing: 'Search - Orders'");
+                    var form = $('<form method="post" target="_blank"/>').appendTo('body');
+                    form.attr('action', sealServer + "SWExecuteReport");
+                    form.append($('<input />').attr('type', 'hidden').attr('name', 'path').attr('value', "\\Search - Orders.srex"));
+                    form.submit();
+                });
+
+            $("#execute2_button")
+                .click(function () {
+                    $("#execute2_label").text("Executing 'Search - Orders' with custom restrictions...");
+                    var form = $('<form method="post" target="_blank"/>').appendTo('body');
+                    form.attr('action', sealServer + "SWExecuteReport");
+                    form.append($('<input />').attr('name', 'path').attr('value', "\\Search - Orders.srex"));
+                    form.append($('<input />').attr('name', 'r0_name').attr('value', "Quantity"));
+                    form.append($('<input />').attr('name', 'r0_operator').attr('value', "Between"));
+                    form.append($('<input />').attr('name', 'r0_value_1').attr('value', "34"));
+                    form.append($('<input />').attr('name', 'r0_value_2').attr('value', "123"));
+                    form.append($('<input />').attr('name', 'r1_name').attr('value', "Category"));
+                    form.append($('<input />').attr('name', 'r1_operator').attr('value', "Equal"));
+                    form.append($('<input />').attr('name', 'r1_enum_values').attr('value', "2,3,4,7"));
+                    form.append($('<input />').attr('name', 'r2_name').attr('value', "Order Date"));
+                    form.append($('<input />').attr('name', 'r2_operator').attr('value', "Equal"));
+                    form.append($('<input />').attr('name', 'r2_value_1').attr('value', "19960709 00:00:00"));
+                    form.append($('<input />').attr('name', 'r2_value_2').attr('value', "19961121 00:00:00"));
+                    form.append($('<input />').attr('name', 'r2_value_3').attr('value', "19970314 00:00:00"));
+                    form.append($('<input />').attr('name', 'r3_name').attr('value', "Customer Contact"));
+                    form.append($('<input />').attr('name', 'r3_operator').attr('value', "Contains"));
+                    form.append($('<input />').attr('name', 'r3_value_1').attr('value', "ar"));
+                    form.append($('<input />').attr('name', 'use_default_restrictions').attr('value', "true"));
+                    form.children('input').attr('type', 'hidden');
+                    form.submit();
+                });
+
+            $("#execute3_button")
+                .click(function () {
+                    $("#execute3_label").text("Executing '07-Outputs and schedules' with the view 'No summary'");
+                    var form = $('<form method="post" target="_blank"/>').appendTo('body');
+                    form.attr('action', sealServer + "SWExecuteReport");
+                    form.append($('<input />').attr('name', 'path').attr('value', "\\Samples\\07-Outputs and schedules.srex"));
+                    form.append($('<input />').attr('name', 'viewGUID').attr('value', "02b6abf5-cd7c-4cbd-8da2-35f3b9d06ffe"));
+                    form.children('input').attr('type', 'hidden');
+                    form.submit();
+                });
+
+            $("#execute4_button")
+                .click(function () {
+                    $("#execute4_label").text("Executing '07-Outputs and schedules' with Output HTML");
+                    var form = $('<form method="post" target="_blank"/>').appendTo('body');
+                    form.attr('action', sealServer + "SWExecuteReport");
+                    form.append($('<input />').attr('name', 'path').attr('value', "\\Samples\\07-Outputs and schedules.srex"));
+                    form.append($('<input />').attr('name', 'outputGUID').attr('value', "cac770ed-3039-4af8-93d3-e197ac94d808"));
+                    form.children('input').attr('type', 'hidden');
+                    form.submit();
+                });
+
+            $("#generate_button")
+                .click(function () {
+                    $("#generate_label").text("Generating report result...");
+                    $("#execute2_label").text("Executing 'Search - Orders' with custom restrictions...");
+                    var form = $('<form method="post" target="_blank"/>').appendTo('body');
+                    form.attr('action', sealServer + "SWExecuteReportToResult");
+                    form.append($('<input />').attr('name', 'path').attr('value', "\\Search - Orders.srex"));
+                    form.append($('<input />').attr('name', 'format').attr('value', "html"));
+                    form.append($('<input />').attr('name', 'r0_name').attr('value', "Quantity"));
+                    form.append($('<input />').attr('name', 'r0_operator').attr('value', "Between"));
+                    form.append($('<input />').attr('name', 'r0_value_1').attr('value', "34"));
+                    form.append($('<input />').attr('name', 'r0_value_2').attr('value', "123"));
+                    form.append($('<input />').attr('name', 'r1_name').attr('value', "Category"));
+                    form.append($('<input />').attr('name', 'r1_operator').attr('value', "Equal"));
+                    form.append($('<input />').attr('name', 'r1_enum_values').attr('value', "2,3,4,7"));
+                    form.append($('<input />').attr('name', 'r2_name').attr('value', "Order Date"));
+                    form.append($('<input />').attr('name', 'r2_operator').attr('value', "Equal"));
+                    form.append($('<input />').attr('name', 'r2_value_1').attr('value', "19960709 00:00:00"));
+                    form.append($('<input />').attr('name', 'r2_value_2').attr('value', "19961121 00:00:00"));
+                    form.append($('<input />').attr('name', 'r2_value_3').attr('value', "19970314 00:00:00"));
+                    form.append($('<input />').attr('name', 'r3_name').attr('value', "Customer Contact"));
+                    form.append($('<input />').attr('name', 'r3_operator').attr('value', "Contains"));
+                    form.append($('<input />').attr('name', 'r3_value_1').attr('value', "ar"));
+                    form.children('input').attr('type', 'hidden');
+                    form.submit();
+                });
+
+            $("#generate2_button")
+                .click(function () {
+                    $("#generate2_label").text("Generating report result...");
+                    var form = $('<form method="post" target="_blank"/>').appendTo('body');
+                    form.attr('action', sealServer + "SWExecuteReportToResult");
+                    form.append($('<input />').attr('name', 'path').attr('value', "\\Samples\\07-Outputs and schedules.srex"));
+                    form.append($('<input />').attr('name', 'outputGUID').attr('value', "cac770ed-3039-4af8-93d3-e197ac94d808"));
+                    form.children('input').attr('type', 'hidden');
+                    form.submit();
+                });
+
+            $("#generate3_button")
+                .click(function () {
+                    $("#generate3_label").text("Generating report result...");
+                    var form = $('<form method="post" target="_blank"/>').appendTo('body');
+                    form.attr('action', sealServer + "SWExecuteReportToResult");
+                    form.append($('<input />').attr('name', 'path').attr('value', "\\Samples\\07-Outputs and schedules.srex"));
+                    form.append($('<input />').attr('name', 'format').attr('value', "excel"));/* print, csv, pdf or excel with the converter */
+                    form.children('input').attr('type', 'hidden');
+                    form.submit();
+                });
+
+                $("#set_up_button")
+                    .click(function () {
+                        if (!name) {
+                            alert('This user cannot change the profile');
+                        }
+                        else {
+                            $.post(sealServer + "SWISetUserProfile", { culture: "fr-FR" })
+                                .done(function (data) {
+                                    if (!data.error) {
+                                        $("#set_up_label").html("SWISetUserProfile Done: culture set to French (France).");
+                                    }
+                                    else {
+                                        $("#set_up_label").text("Error: " + data.error);
+                                    }
+                                })
+                        }
+                    });
+
+            $("#get_up_button")
+                .click(function () {
+                    $.post(sealServer + "SWIGetUserProfile")
+                        .done(function (data) {
+                            if (!data.error) {
+                                $("#get_up_label").html("SWIGetUserProfile Done.<br>" + JSON.stringify(data));
+                            }
+                            else {
+                                $("#get_up_label").text("Error: " + data.error);
+                            }
+                        })
+                });
+
+            $("#translate_button")
+                .click(function () {
+                    $.post(sealServer + "SWITranslate", { context: "Report", reference: "report restrictions" })
+                        .done(function (data) {
+                            if (!data.error) {
+                                $("#translate_label").html("SWITranslate Done: 'report restrictions'->" + data.text + "<br>" + JSON.stringify(data));
+                            }
+                            else {
+                                $("#translate_label").text("Error: " + data.error);
+                            }
+                        })
+                });
+
+            $("#repository_translate_button")
+                .click(function () {
+                    $.post(sealServer + "SWITranslate", { context: "Element", instance: "Customers.City", reference: "City" })
+                        .done(function (data) {
+                            if (!data.error) {
+                                $("#repository_translate_label").html("SWITranslate Done: 'City'->" + data.text + "<br>" + JSON.stringify(data));
+                            }
+                            else {
+                                $("#repository_translate_label").text("Error: " + data.error);
+                            }
+                        })
+                });
+
+            $("#logout_button")
+                .click(function () {
+                    $.post(sealServer + "SWILogout")
+                        .done(function (data) {
+                            if (!data.error) {
+                                $("#connect_label").text("");
+                                $("#logout_label").text("Disconnected");
+                                connected = false;
+                                name = "";
+                            }
+                            else {
+                                $("#browse_detail_label").text("Error: " + data.error);
+                            }
+                            enableControls();
+                        })
+                });
+
+            $("#version_button")
+                .click(function () {
+                    $.post(sealServer + "SWIGetVersions")
+                        .done(function (data) {
+                            if (!data.error) {
+                                $("#version_label").html("SWIGetVersions Done: Version=" + data.SWIVersion + " Seal Version=" + data.SRVersion + "<br>" + JSON.stringify(data));
+                            }
+                            else {
+                                $("#login_label").text("Error: " + data.error);
+                            }
+                            enableControls();
+                        })
+                });
+
+            enableControls();
+        });
+    </script>
+</head>
+<body>
+    <nav class="navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">Seal Web Interface</a>
+            <ul class="nav navbar-nav pull-xs-right">
+                <li class="nav-item active"><a class="nav-link" href="WebInterfaceSamples.html">Samples</a></li>
+                <li class="nav-item"><a class="nav-link" href="WebInterfaceAPI.html">API Description</a></li>
+                <li class="nav-item"><a class="nav-link" href="https://sealreport.org/" target="_blank">Seal Report Home</a></li>
+            </ul>
+        </div><!-- /.container -->
+    </nav><!-- /.navbar -->
+
+    <div class="container">
+
+        <div class="row row-offcanvas row-offcanvas-right">
+
+            <div class="col-xs-12 col-sm-12">
+                <h2>Seal Report Web Interface: Samples</h2>
+                <br />
+
+                <table class="table table-striped">
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="user_name" name="user_name" placeholder="User name (leave it empty for the demo)" autofocus value="" />
+                                    <input type="password" class="form-control" id="password" name="password" placeholder="Password (leave it empty for the demo)" />
+                                </div>
+                                <button id="login_button">Login</button>
+                            </td>
+                            <td width="50%"><label id="login_label"></label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="open_button">Open Web Server in a new window</button>
+                            </td>
+                            <td width="50%"></td>
+                        </tr>
+                        <tr><th>Repository browsing:</th><td></td></tr>
+                        <tr>
+                            <td>
+                                <button id="folders_button">Get Folders</button>
+                            </td>
+                            <td width="50%"><label id="folders_label"></label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="folder_detail_button">Get Folder Detail</button>
+                            </td>
+                            <td width="50%"><label id="folder_detail_label"></label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="report_detail_button">Get Report Detail</button>
+                            </td>
+                            <td width="50%"><label id="report_detail_label"></label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="search_button">Search</button>
+                            </td>
+                            <td width="50%"><label id="search_label"></label></td>
+                        </tr>
+                        <tr><th>Execute a report in a new window:</th><td></td></tr>
+                        <tr>
+                            <td>
+                                <button id="execute_button">Execute a report</button>
+                            </td>
+                            <td width="50%"><label id="execute_label"></label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="execute2_button">Execute 'Search - Orders' with custom restrictions</button>
+                            </td>
+                            <td width="50%"><label id="execute2_label"></label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="execute3_button">Execute '07-Outputs and schedules' with a specific view</button>
+                            </td>
+                            <td width="50%"><label id="execute3_label"></label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="execute4_button">Execute '07-Outputs and schedules' to HTML Output</button>
+                            </td>
+                            <td width="50%"><label id="execute4_label"></label></td>
+                        </tr>
+                        <tr><th>Generating report results:</th><td></td></tr>
+                        <tr>
+                            <td>
+                                <button id="generate_button">Generate 'Search - Orders' in HTML</button>
+                            </td>
+                            <td width="50%"><label id="generate_label"></label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="generate2_button">Generate '07-Outputs and schedules' in Output and View the result</button>
+                            </td>
+                            <td width="50%"><label id="generate2_label"></label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="generate3_button">Generate '07-Outputs and schedules' in Excel and View the result</button>
+                            </td>
+                            <td width="50%"><label id="generate3_label"></label></td>
+                        </tr>
+                        <tr><th>Logout:</th><td></td></tr>
+                        <tr>
+                            <td>
+                                <button id="logout_button">Logout</button>
+                            </td>
+                            <td width="50%"><label id="logout_label"></label></td>
+                        </tr>
+                        <tr><th>Additional:</th><td></td></tr>
+                        <tr>
+                            <td>
+                                <button id="set_up_button">Set User Profile</button>
+                            </td>
+                            <td width="50%"><label id="set_up_label"></label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="get_up_button">Get User Profile</button>
+                            </td>
+                            <td width="50%"><label id="get_up_label"></label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="translate_button">Translate</button>
+                            </td>
+                            <td width="50%"><label id="translate_label"></label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="repository_translate_button">Repository Translate</button>
+                            </td>
+                            <td width="50%"><label id="repository_translate_label"></label></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="version_button">Get Seal Web Interface and Seal Report Version</button>
+                            </td>
+                            <td width="50%"><label id="version_label"></label></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div><!--/row-->
+
+        <hr>
+
+        <footer>
+            <p>&copy; Seal Report</p>
+        </footer>
+
+    </div><!--/.container-->
+</body>
+</html>

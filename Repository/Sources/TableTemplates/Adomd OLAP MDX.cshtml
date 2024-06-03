@@ -1,0 +1,25 @@
+﻿@using Seal.Model;
+@{
+    MetaTable table = Model;
+
+    //Parameters for this table
+    table.Parameters.Add(new Parameter() { Name = "mdx_connection", Value = "", DisplayName = "Connection String", Description = "The connection string of the OLAP Analysis Server", Enums = new string[] { "Data Source=localhost;Catalog=AdventureWorksDW2014" }, UseOnlyEnumValues = false });
+    table.Parameters.Add(new Parameter() { Name = "mdx_query", Value = "", DisplayName = "MDX Query", Description = "The MDX query sent to the server" });
+
+    table.DefinitionScript = @"@using System.Data
+@using Microsoft.AnalysisServices.AdomdClient
+@{
+    MetaTable metaTable = Model;
+
+    using (var connection = new AdomdConnection(metaTable.GetValue(""mdx_connection"")))
+    {
+        connection.Open();
+        AdomdCommand cmd = new AdomdCommand(metaTable.GetValue(""mdx_query""), connection);
+        metaTable.NoSQLTable = DataTableLoader.FromAdomdCommand(cmd);
+        connection.Close();
+    }
+}";
+
+    table.LoadScript = @"";
+}
+
